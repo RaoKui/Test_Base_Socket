@@ -1,9 +1,8 @@
 package com.yxkj.np.test_base_socket;
 
-import android.view.View;
-
+import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.Socket;
 
 /**
@@ -22,11 +21,33 @@ public class MyThread extends Thread {
     public void run() {
         super.run();
 
-        while(true){
+        while (true) {
             try {
-                InputStream is = socket.getInputStream();
-                int size = is.read();
-                byte data[] = new byte[size];
+                DataInputStream dis = new DataInputStream(socket.getInputStream());
+                int size = dis.readInt();
+                if (size == -1) {
+                    char data[] = new char[1024 * 4];
+                    InputStreamReader isr = new InputStreamReader(dis, "UTF-8");
+                    isr.read(data);
+
+                    String s = new String(data);
+                    onGetDataMessageListener.onString(s);
+                } else {
+                    byte data[] = new byte[size];
+                    int length = 0;
+                    while (length < size) {
+                        length += dis.read(data, length, size - length);
+                    }
+                    onGetDataMessageListener.onPic(data);
+                }
+
+
+//                BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+//                String message = null;
+//                while ((message = br.readLine()) != null) {
+//                    onGetDataMessageListener.onString(message);
+//                }
+
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -38,7 +59,7 @@ public class MyThread extends Thread {
     public interface OnGetDataMessageListener {
         void onString(String message);
 
-        void onPic();
+        void onPic(byte[] data);
     }
 
     private OnGetDataMessageListener onGetDataMessageListener;
